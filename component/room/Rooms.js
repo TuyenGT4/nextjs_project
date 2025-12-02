@@ -1,22 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { Container, Box, Grid, Typography, Skeleton } from "@mui/material";
 import { useSearchParams } from "next/navigation";
 import RoomCard from "./RoomCard";
 import { mainHeadingStyles, subHeadingStyles } from "./HeadingStyles";
 
-const RoomsRates = () => {
+// Tách phần sử dụng useSearchParams ra component riêng
+const RoomsContent = () => {
   const [rooms, setRooms] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
   const searchParams = useSearchParams();
 
   const searchParamsObj = {
     checkIn: searchParams.get("checkIn"),
     checkOut: searchParams.get("checkOut"),
-    guests: searchParams.get("gueste"),
+    guests: searchParams.get("guests"),
   };
 
   useEffect(() => {
@@ -45,9 +44,7 @@ const RoomsRates = () => {
         }
 
         const res = await fetch(url);
-
         const data = await res.json();
-
         setRooms(data);
       } catch (error) {
         console.log(error);
@@ -101,28 +98,51 @@ const RoomsRates = () => {
         </Typography>
 
         <Grid container spacing={3}>
-          {loading ? (
-            Array.from({ length: 6 }).map((_, index) => (
-              <Grid item xs={12} sm={6} md={4} key={index}>
-                <RoomCardSkeleton />
-              </Grid>
-            ))
-          ) : rooms.length > 0 ? (
-            rooms.map((room) => (
-              <Grid item xs={12} sm={6} md={4} key={room.id || room._id}>
-                <RoomCard room={room} searchParams={searchParamsObj} />
-              </Grid>
-            ))
-          ) : (
-            <Grid item xs={12}>
-              <Typography align="center" sx={{ py: 4 }}>
-                Không có phòng trống phù hợp với tiêu chí tìm kiếm của bạn
-              </Typography>
-            </Grid>
-          )}
+          {loading
+            ? Array.from({ length: 6 }).map((_, index) => (
+                <Grid item xs={12} sm={6} md={4} key={index}>
+                  <RoomCardSkeleton />
+                </Grid>
+              ))
+            : rooms.map((room) => (
+                <Grid item xs={12} sm={6} md={4} key={room._id}>
+                  <RoomCard room={room} searchParams={searchParamsObj} />
+                </Grid>
+              ))}
         </Grid>
       </Box>
     </Container>
+  );
+};
+
+// Component loading fallback
+const RoomsLoadingFallback = () => (
+  <Container maxWidth="xl">
+    <Box sx={{ padding: "2rem" }}>
+      <Skeleton variant="text" width="40%" height={50} sx={{ mx: "auto" }} />
+      <Skeleton
+        variant="text"
+        width="60%"
+        height={30}
+        sx={{ mx: "auto", mb: 3 }}
+      />
+      <Grid container spacing={3}>
+        {Array.from({ length: 6 }).map((_, index) => (
+          <Grid item xs={12} sm={6} md={4} key={index}>
+            <Skeleton variant="rectangular" height={300} />
+          </Grid>
+        ))}
+      </Grid>
+    </Box>
+  </Container>
+);
+
+// Component chính - wrap trong Suspense
+const RoomsRates = () => {
+  return (
+    <Suspense fallback={<RoomsLoadingFallback />}>
+      <RoomsContent />
+    </Suspense>
   );
 };
 

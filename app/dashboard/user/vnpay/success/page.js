@@ -1,12 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Box, Typography, Button } from "@mui/material";
+import { Box, Typography, Button, CircularProgress } from "@mui/material";
 import { FaCheckCircle } from "react-icons/fa";
 import { motion } from "framer-motion";
 
-const VNPaySuccess = () => {
+// Tách phần sử dụng useSearchParams ra component riêng
+const VNPaySuccessContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const bookingId = searchParams.get("bookingId");
@@ -58,6 +59,28 @@ const VNPaySuccess = () => {
         </Button>
       </Box>
     </Box>
+  );
+};
+
+// Component loading
+const LoadingFallback = () => (
+  <Box
+    display="flex"
+    justifyContent="center"
+    alignItems="center"
+    height="100vh"
+    bgcolor="#212121"
+  >
+    <CircularProgress color="success" />
+  </Box>
+);
+
+// Component chính - wrap trong Suspense
+const VNPaySuccess = () => {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <VNPaySuccessContent />
+    </Suspense>
   );
 };
 

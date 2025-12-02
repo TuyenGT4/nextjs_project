@@ -115,12 +115,29 @@ export async function POST(req) {
     }
 
     // ============ VNPAY CONFIGURATION ============
-    const tmnCode = process.env.VNPAY_TMN_CODE;
-    const secretKey = process.env.VNPAY_HASH_SECRET;
+    // ✅ SỬA: Dùng đúng tên biến trong config.js của bạn
+    const tmnCode = process.env.VNP_TMNCODE;
+    const secretKey = process.env.VNP_SECRET;
     const vnpUrl =
-      process.env.VNPAY_URL ||
-      "https://sandbox.vnpayment.vn/paymentv2/vpcpay. html";
-    const returnUrl = process.env.VNPAY_RETURN_URL;
+      process.env.VNP_HOST ||
+      "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
+    const returnUrl = process.env.VNP_RETURN_URL;
+
+    // Debug: In ra để kiểm tra
+    console.log("VNPay Config:", {
+      tmnCode,
+      secretKey: secretKey ? "***" : "UNDEFINED",
+      vnpUrl,
+      returnUrl,
+    });
+
+    // Kiểm tra config
+    if (!tmnCode || !secretKey || !returnUrl) {
+      return NextResponse.json(
+        { err: "VNPay configuration is missing" },
+        { status: 500 }
+      );
+    }
 
     const date = new Date();
     const createDate = date

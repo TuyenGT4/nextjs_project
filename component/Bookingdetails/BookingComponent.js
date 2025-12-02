@@ -1,7 +1,7 @@
-// components/BookingComponent.js
+// components/BookingComponent. js
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 
 import {
   Container,
@@ -25,7 +25,6 @@ import SquareFootIcon from "@mui/icons-material/SquareFoot";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import HotelIcon from "@mui/icons-material/Hotel";
 import SendIcon from "@mui/icons-material/Send";
-import { Suspense } from "react";
 import Rooms from "@/component/rooms/Rooms";
 import {
   bookingStyles,
@@ -33,17 +32,14 @@ import {
   pricingSummaryStyles,
 } from "./BookingComponentStyles";
 import BookingSkeletonLoader from "./BookingSkeletonLoader";
-import { useSearchParams } from "next/navigation"; // Import useSearchParams
-import { format, parseISO, isAfter } from "date-fns"; // Date handling utilities
+import { useSearchParams } from "next/navigation";
+import { format, parseISO, isAfter } from "date-fns";
 import ImageSlider from "./ImageSlider";
+
 const PLACEHOLDER_IMAGE = "/images/hotel17.jpg";
 
-const BookingComponent = ({
-  content,
-
-  loading,
-  setLoading,
-}) => {
+// Tách phần sử dụng useSearchParams ra component riêng
+const BookingComponentContent = ({ content, loading, setLoading }) => {
   const searchParams = useSearchParams();
   const roomData = content?.[0];
   const originalPrice = parseFloat(roomData?.price);
@@ -53,7 +49,7 @@ const BookingComponent = ({
 
   // Extract query params
   const roomId = searchParams?.get("search") || "";
-  const initialCheckIn = searchParams?.get("checkIn") || today; // Default to today
+  const initialCheckIn = searchParams?.get("checkIn") || today;
   const initialCheckOut = searchParams?.get("checkOut") || "";
   const initialGuests = searchParams?.get("guests") || "1";
 
@@ -92,13 +88,11 @@ const BookingComponent = ({
       const checkOutDate = new Date(checkOut);
       const todayDate = new Date(today);
 
-      // Check if check-in is in the past
       if (checkInDate < todayDate) {
         setDateError("Ngày nhận phòng không thể là ngày trong quá khứ");
         return;
       }
 
-      // Check if check-out is before or equal to check-in
       if (checkOutDate <= checkInDate) {
         setDateError("Ngày trả phòng phải sau ngày nhận phòng");
         return;
@@ -107,8 +101,6 @@ const BookingComponent = ({
       setDateError(null);
     }
   }, [checkIn, checkOut, today]);
-
-  // Your existing API request effect
 
   useEffect(() => {
     const fetchUpdatedData = async () => {
@@ -128,7 +120,6 @@ const BookingComponent = ({
         const data = await res.json();
 
         console.log("pricing data", data);
-        // Update pricing data state
         setPricingData({
           subtotal: data.subtotal || 0,
           discountPercent: data.discountPercent || 0,
@@ -146,7 +137,16 @@ const BookingComponent = ({
 
     const debounceTimer = setTimeout(fetchUpdatedData, 500);
     return () => clearTimeout(debounceTimer);
-  }, [roomId, checkIn, checkOut, guests, rooms, dateError]);
+  }, [
+    roomId,
+    checkIn,
+    checkOut,
+    guests,
+    rooms,
+    dateError,
+    roomError,
+    setLoading,
+  ]);
 
   useEffect(() => {
     if (!content) {
@@ -155,12 +155,11 @@ const BookingComponent = ({
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [content]);
+  }, [content, setLoading]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Create URLSearchParams object
     const params = new URLSearchParams();
     params.append("roomId", roomId);
     params.append("checkIn", checkIn);
@@ -168,7 +167,6 @@ const BookingComponent = ({
     params.append("guests", guests);
     params.append("rooms", rooms);
 
-    // Redirect to checkout with plain URL params
     window.location.href = `/checkout?${params.toString()}`;
   };
 
@@ -177,392 +175,405 @@ const BookingComponent = ({
   }
 
   return (
-    <Suspense fallback={<div>Đang tải thông tin phòng...</div>}>
-      <Container maxWidth="xl" sx={bookingStyles.container}>
-        <Grid container spacing={2} mt={5}>
-          <Grid item xs={12} md={4} sx={bookingStyles.bookingFormContainer}>
-            <form onSubmit={handleSubmit}>
-              <Typography variant="h6" sx={bookingStyles.bookingFormTitle}>
-                Phiếu đặt phòng
-              </Typography>
-              <TextField
-                label="Ngày nhận phòng"
-                type="date"
-                value={checkIn}
-                onChange={(e) => setCheckIn(e.target.value)}
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                margin="normal"
-                inputProps={{
-                  min: today, // Disable past dates in the picker
-                }}
-                error={!!dateError}
-              />
-              <TextField
-                label="Ngày trả phòng"
-                type="date"
-                value={checkOut}
-                onChange={(e) => setCheckOut(e.target.value)}
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-                margin="normal"
-                inputProps={{
-                  min: checkIn || today, // Minimum is check-in date or today
-                }}
-                error={!!dateError}
-                helperText={dateError || " "}
-              />
+    <Container maxWidth="xl" sx={bookingStyles.container}>
+      <Grid container spacing={2} mt={5}>
+        <Grid item xs={12} md={4} sx={bookingStyles.bookingFormContainer}>
+          <form onSubmit={handleSubmit}>
+            <Typography variant="h6" sx={bookingStyles.bookingFormTitle}>
+              Phiếu đặt phòng
+            </Typography>
+            <TextField
+              label="Ngày nhận phòng"
+              type="date"
+              value={checkIn}
+              onChange={(e) => setCheckIn(e.target.value)}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              margin="normal"
+              inputProps={{
+                min: today,
+              }}
+              error={!!dateError}
+            />
+            <TextField
+              label="Ngày trả phòng"
+              type="date"
+              value={checkOut}
+              onChange={(e) => setCheckOut(e.target.value)}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              margin="normal"
+              inputProps={{
+                min: checkIn || today,
+              }}
+              error={!!dateError}
+              helperText={dateError || " "}
+            />
 
-              <TextField
-                label="Số người"
-                select
-                fullWidth
-                value={guests}
-                onChange={(e) => setGuests(e.target.value)}
-                margin="normal"
-                error={parseInt(guests) > (roomData?.total_adult || 1)}
-                helperText={
-                  parseInt(guests) > (roomData?.total_adult || 1)
-                    ? `Tối đa ${roomData?.total_adult} người`
-                    : " "
-                }
-              >
-                {Array.from(
-                  { length: Math.min(8, roomData?.total_adult || 8) },
+            <TextField
+              label="Số người"
+              select
+              fullWidth
+              value={guests}
+              onChange={(e) => setGuests(e.target.value)}
+              margin="normal"
+              error={parseInt(guests) > (roomData?.total_adult || 1)}
+              helperText={
+                parseInt(guests) > (roomData?.total_adult || 1)
+                  ? `Tối đa ${roomData?.total_adult} người`
+                  : " "
+              }
+            >
+              {Array.from(
+                { length: Math.min(8, roomData?.total_adult || 8) },
+                (_, i) => i + 1
+              ).map((option) => (
+                <MenuItem key={option} value={option.toString()}>
+                  {option}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              label="Số phòng"
+              select
+              fullWidth
+              value={isRoomAvailable ? rooms : "0"}
+              onChange={(e) => setRooms(e.target.value)}
+              margin="normal"
+              disabled={!isRoomAvailable}
+            >
+              {isRoomAvailable ? (
+                Array.from(
+                  { length: Math.min(6, availableRooms) },
                   (_, i) => i + 1
                 ).map((option) => (
                   <MenuItem key={option} value={option.toString()}>
                     {option}
                   </MenuItem>
-                ))}
-              </TextField>
-
-              <TextField
-                label="Số phòng"
-                select
-                fullWidth
-                value={isRoomAvailable ? rooms : "0"}
-                onChange={(e) => setRooms(e.target.value)}
-                margin="normal"
-                disabled={!isRoomAvailable}
-              >
-                {isRoomAvailable ? (
-                  Array.from(
-                    { length: Math.min(6, availableRooms) },
-                    (_, i) => i + 1
-                  ).map((option) => (
-                    <MenuItem key={option} value={option.toString()}>
-                      {option}
-                    </MenuItem>
-                  ))
-                ) : (
-                  <MenuItem value="0">Không có phòng trống</MenuItem>
-                )}
-              </TextField>
-
-              <Box sx={{ mt: 2, mb: 2 }}>
-                {isRoomAvailable ? (
-                  <Typography variant="body2" color="text.secondary">
-                    Phòng trống: {availableRooms}{" "}
-                    {availableRooms === 1 ? "Phòng" : "Phòng"}
-                  </Typography>
-                ) : (
-                  <Alert severity="error" sx={{ mb: 2 }}>
-                    Hiện tại không có phòng trống
-                  </Alert>
-                )}
-              </Box>
-
-              {loading ? (
-                <Box sx={pricingSummaryStyles.container}>
-                  <Typography sx={pricingSummaryStyles.title}>
-                    Đang tải giá...
-                  </Typography>
-                </Box>
+                ))
               ) : (
-                <Box sx={pricingSummaryStyles.container}>
-                  <Typography sx={pricingSummaryStyles.title}>
-                    Tổng chi phí
-                  </Typography>
-
-                  <Box sx={pricingSummaryStyles.row}>
-                    <Typography sx={pricingSummaryStyles.label}>
-                      Tạm tính:
-                    </Typography>
-                    <Typography sx={pricingSummaryStyles.value}>
-                      {pricingData.subtotal.toLocaleString("vi-VN")} VND
-                    </Typography>
-                  </Box>
-
-                  {pricingData.discountPercent > 0 && (
-                    <>
-                      <Box sx={pricingSummaryStyles.row}>
-                        <Typography sx={pricingSummaryStyles.label}>
-                          Giảm giá ({pricingData.discountPercent}%):
-                        </Typography>
-                        <Typography sx={pricingSummaryStyles.discountValue}>
-                          -{pricingData.discountAmount.toLocaleString("vi-VN")}
-                          VND
-                        </Typography>
-                      </Box>
-                    </>
-                  )}
-
-                  <Divider sx={pricingSummaryStyles.divider} />
-
-                  <Box sx={pricingSummaryStyles.totalRow}>
-                    <Typography sx={pricingSummaryStyles.totalLabel}>
-                      Tổng cộng:
-                    </Typography>
-                    <Typography sx={pricingSummaryStyles.totalValue}>
-                      {pricingData.total.toLocaleString("vi-VN")} VND
-                    </Typography>
-                  </Box>
-                </Box>
+                <MenuItem value="0">Không có phòng trống</MenuItem>
               )}
+            </TextField>
 
-              <Button
-                type="submit"
-                variant="contained"
-                fullWidth
-                sx={bookingStyles.bookNowButton}
-                disabled={!!dateError || !isRoomAvailable || loading}
-              >
-                {isRoomAvailable ? "Đặt ngay" : "Hết phòng"}
-              </Button>
-            </form>
-          </Grid>
+            <Box sx={{ mt: 2, mb: 2 }}>
+              {isRoomAvailable ? (
+                <Typography variant="body2" color="text.secondary">
+                  Phòng trống: {availableRooms}{" "}
+                  {availableRooms === 1 ? "Phòng" : "Phòng"}
+                </Typography>
+              ) : (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  Hiện tại không có phòng trống
+                </Alert>
+              )}
+            </Box>
 
-          <Grid item xs={12} md={8}>
-            {/* Animated Image with Zoom Effect */}
+            {loading ? (
+              <Box sx={pricingSummaryStyles.container}>
+                <Typography sx={pricingSummaryStyles.title}>
+                  Đang tải giá...
+                </Typography>
+              </Box>
+            ) : (
+              <Box sx={pricingSummaryStyles.container}>
+                <Typography sx={pricingSummaryStyles.title}>
+                  Tổng chi phí
+                </Typography>
 
-            <ImageSlider images={roomData?.gallery_images} />
+                <Box sx={pricingSummaryStyles.row}>
+                  <Typography sx={pricingSummaryStyles.label}>
+                    Tạm tính:
+                  </Typography>
+                  <Typography sx={pricingSummaryStyles.value}>
+                    {pricingData.subtotal.toLocaleString("vi-VN")} VND
+                  </Typography>
+                </Box>
 
-            {/* Modern Card Container */}
-            <Box sx={bookingStyles.roomCard}>
-              {/* Animated Title */}
-              <Typography
-                variant="h4"
-                gutterBottom
-                sx={bookingStyles.roomTitle}
-              >
-                {roomData?.roomtype_id?.name}
+                {pricingData.discountPercent > 0 && (
+                  <>
+                    <Box sx={pricingSummaryStyles.row}>
+                      <Typography sx={pricingSummaryStyles.label}>
+                        Giảm giá ({pricingData.discountPercent}%):
+                      </Typography>
+                      <Typography sx={pricingSummaryStyles.discountValue}>
+                        -{pricingData.discountAmount.toLocaleString("vi-VN")}
+                        VND
+                      </Typography>
+                    </Box>
+                  </>
+                )}
+
+                <Divider sx={pricingSummaryStyles.divider} />
+
+                <Box sx={pricingSummaryStyles.totalRow}>
+                  <Typography sx={pricingSummaryStyles.totalLabel}>
+                    Tổng cộng:
+                  </Typography>
+                  <Typography sx={pricingSummaryStyles.totalValue}>
+                    {pricingData.total.toLocaleString("vi-VN")} VND
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+
+            <Button
+              type="submit"
+              variant="contained"
+              fullWidth
+              sx={bookingStyles.bookNowButton}
+              disabled={!!dateError || !isRoomAvailable || loading}
+            >
+              {isRoomAvailable ? "Đặt ngay" : "Hết phòng"}
+            </Button>
+          </form>
+        </Grid>
+
+        <Grid item xs={12} md={8}>
+          <ImageSlider images={roomData?.gallery_images} />
+
+          <Box sx={bookingStyles.roomCard}>
+            <Typography variant="h4" gutterBottom sx={bookingStyles.roomTitle}>
+              {roomData?.roomtype_id?.name}
+            </Typography>
+
+            <Box sx={bookingStyles.priceContainer}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                Giá:
+              </Typography>
+              <Chip
+                label={`${originalPrice.toLocaleString("vi-VN")} VND/Đêm`}
+                color="primary"
+                sx={bookingStyles.originalPriceChip}
+              />
+            </Box>
+
+            <Box sx={bookingStyles.descriptionBox}>
+              <Typography variant="body1" sx={bookingStyles.descriptionText}>
+                {roomData?.short_desc}
               </Typography>
 
-              {/* Price with Badge */}
-              <Box sx={bookingStyles.priceContainer}>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Giá:
-                </Typography>
-                <Chip
-                  label={`${originalPrice.toLocaleString("vi-VN")} VND/Đêm`}
-                  color="primary"
-                  sx={bookingStyles.originalPriceChip}
-                />
-              </Box>
+              <Typography
+                variant="body1"
+                sx={bookingStyles.longDescriptionText}
+              >
+                {roomData?.description}
+              </Typography>
+            </Box>
 
-              {/* Description with Fade-in Animation */}
-              <Box sx={bookingStyles.descriptionBox}>
-                <Typography variant="body1" sx={bookingStyles.descriptionText}>
-                  {roomData?.short_desc}
-                </Typography>
-
-                <Typography
-                  variant="body1"
-                  sx={bookingStyles.longDescriptionText}
-                >
-                  {roomData?.description}
-                </Typography>
-              </Box>
-
-              {/* Amenities Grid with Hover Effects */}
-              <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid item xs={12} sm={6}>
-                  <List dense>
-                    {roomData?.facilities
-                      .slice(0, Math.ceil(roomData?.facilities.length / 2))
-                      .map((facility, index) => (
-                        <ListItem key={index} sx={bookingStyles.amenityItem}>
-                          <ListItemIcon
-                            sx={{ minWidth: 36, color: "primary.main" }}
-                          >
-                            <CheckCircleOutlineIcon />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={facility}
-                            primaryTypographyProps={{ fontWeight: 500 }}
-                          />
-                        </ListItem>
-                      ))}
-                  </List>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <List dense>
-                    {roomData?.facilities
-                      .slice(Math.ceil(roomData?.facilities.length / 2))
-                      .map((facility, index) => (
-                        <ListItem key={index} sx={bookingStyles.amenityItem}>
-                          <ListItemIcon
-                            sx={{ minWidth: 36, color: "primary.main" }}
-                          >
-                            <CheckCircleOutlineIcon />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={facility}
-                            primaryTypographyProps={{ fontWeight: 500 }}
-                          />
-                        </ListItem>
-                      ))}
-                  </List>
-                </Grid>
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid item xs={12} sm={6}>
+                <List dense>
+                  {roomData?.facilities
+                    .slice(0, Math.ceil(roomData?.facilities.length / 2))
+                    .map((facility, index) => (
+                      <ListItem key={index} sx={bookingStyles.amenityItem}>
+                        <ListItemIcon
+                          sx={{ minWidth: 36, color: "primary.main" }}
+                        >
+                          <CheckCircleOutlineIcon />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={facility}
+                          primaryTypographyProps={{ fontWeight: 500 }}
+                        />
+                      </ListItem>
+                    ))}
+                </List>
               </Grid>
-
-              {/* Facilities with Animated Chips */}
-              <Box sx={bookingStyles.amenitiesContainer}>
-                <Typography
-                  variant="h6"
-                  gutterBottom
-                  sx={bookingStyles.facilitiesTitle}
-                >
-                  Tiện nghi phòng
-                </Typography>
-                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                  {roomData?.facilities.map((facility, index) => (
-                    <Chip
-                      key={index}
-                      label={facility}
-                      size="small"
-                      sx={bookingStyles.facilityChip}
-                    />
-                  ))}
-                </Box>
-              </Box>
-
-              {/* Room Details Cards */}
-              <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid item xs={12} sm={6}>
-                  <Box sx={bookingStyles.detailCard}>
-                    <Typography
-                      variant="h6"
-                      gutterBottom
-                      sx={{ fontWeight: 600 }}
-                    >
-                      <Box component="span" sx={{ color: "primary.main" }}>
-                        Thông tin
-                      </Box>{" "}
-                      Phòng
-                    </Typography>
-                    <Divider sx={{ mb: 2 }} />
-                    <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                      <PeopleOutlineIcon
-                        sx={{ mr: 1, color: "primary.main" }}
-                      />
-                      <Typography variant="body1">
-                        Người lớn: {roomData?.total_adult}, Children:{" "}
-                        {roomData?.total_child}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <SquareFootIcon sx={{ mr: 1, color: "primary.main" }} />
-                      <Typography variant="body1">
-                        Diện tích: {roomData?.size} m²
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Box sx={bookingStyles.detailCard}>
-                    <Typography
-                      variant="h6"
-                      gutterBottom
-                      sx={{ fontWeight: 600 }}
-                    >
-                      <Box component="span" sx={{ color: "primary.main" }}>
-                        Hướng nhìn &
-                      </Box>{" "}
-                      Giường
-                    </Typography>
-                    <Divider sx={{ mb: 2 }} />
-                    <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                      <VisibilityIcon sx={{ mr: 1, color: "primary.main" }} />
-                      <Typography variant="body1">
-                        Hướng: {roomData?.view}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <HotelIcon sx={{ mr: 1, color: "primary.main" }} />
-                      <Typography variant="body1">
-                        Loại giường: {roomData?.bed_style}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
+              <Grid item xs={12} sm={6}>
+                <List dense>
+                  {roomData?.facilities
+                    .slice(Math.ceil(roomData?.facilities.length / 2))
+                    .map((facility, index) => (
+                      <ListItem key={index} sx={bookingStyles.amenityItem}>
+                        <ListItemIcon
+                          sx={{ minWidth: 36, color: "primary. main" }}
+                        >
+                          <CheckCircleOutlineIcon />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary={facility}
+                          primaryTypographyProps={{ fontWeight: 500 }}
+                        />
+                      </ListItem>
+                    ))}
+                </List>
               </Grid>
+            </Grid>
 
-              {/* Review Section */}
-              <Box sx={bookingStyles.reviewSection}>
-                <Typography
-                  variant="h6"
-                  gutterBottom
-                  sx={bookingStyles.reviewTitle}
-                >
-                  Đánh giá và xếp hạng từ khách hàng
-                </Typography>
-
-                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                  <Rating
-                    name="client-rating"
-                    defaultValue={4.5}
-                    precision={0.5}
-                    icon={
-                      <LocalHotelIcon
-                        fontSize="inherit"
-                        sx={{ color: "primary.main" }}
-                      />
-                    }
-                    emptyIcon={
-                      <LocalHotelIcon
-                        fontSize="inherit"
-                        sx={{ color: "action.disabled" }}
-                      />
-                    }
+            <Box sx={bookingStyles.amenitiesContainer}>
+              <Typography
+                variant="h6"
+                gutterBottom
+                sx={bookingStyles.facilitiesTitle}
+              >
+                Tiện nghi phòng
+              </Typography>
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                {roomData?.facilities.map((facility, index) => (
+                  <Chip
+                    key={index}
+                    label={facility}
+                    size="small"
+                    sx={bookingStyles.facilityChip}
                   />
-                  <Typography
-                    variant="body2"
-                    sx={{ ml: 1, color: "text.secondary" }}
-                  >
-                    (4.5/5 từ 128 đánh giá)
-                  </Typography>
-                </Box>
-
-                <TextField
-                  label="Viết đánh giá của bạn..."
-                  multiline
-                  rows={4}
-                  variant="outlined"
-                  fullWidth
-                  sx={bookingStyles.reviewTextField}
-                />
-
-                <Button
-                  variant="contained"
-                  endIcon={<SendIcon />}
-                  sx={bookingStyles.submitReviewButton}
-                >
-                  Gửi đánh giá
-                </Button>
+                ))}
               </Box>
             </Box>
 
-            {/* Keyframe animations */}
-            <style jsx global>
-              {globalStyles}
-            </style>
-          </Grid>
-        </Grid>
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid item xs={12} sm={6}>
+                <Box sx={bookingStyles.detailCard}>
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{ fontWeight: 600 }}
+                  >
+                    <Box component="span" sx={{ color: "primary.main" }}>
+                      Thông tin
+                    </Box>{" "}
+                    Phòng
+                  </Typography>
+                  <Divider sx={{ mb: 2 }} />
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                    <PeopleOutlineIcon sx={{ mr: 1, color: "primary.main" }} />
+                    <Typography variant="body1">
+                      Người lớn: {roomData?.total_adult}, Children:{" "}
+                      {roomData?.total_child}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <SquareFootIcon sx={{ mr: 1, color: "primary.main" }} />
+                    <Typography variant="body1">
+                      Diện tích: {roomData?.size} m²
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Box sx={bookingStyles.detailCard}>
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{ fontWeight: 600 }}
+                  >
+                    <Box component="span" sx={{ color: "primary.main" }}>
+                      Hướng nhìn &
+                    </Box>{" "}
+                    Giường
+                  </Typography>
+                  <Divider sx={{ mb: 2 }} />
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                    <VisibilityIcon sx={{ mr: 1, color: "primary.main" }} />
+                    <Typography variant="body1">
+                      Hướng: {roomData?.view}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <HotelIcon sx={{ mr: 1, color: "primary.main" }} />
+                    <Typography variant="body1">
+                      Loại giường: {roomData?.bed_style}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+            </Grid>
 
-        <Rooms />
-      </Container>
+            <Box sx={bookingStyles.reviewSection}>
+              <Typography
+                variant="h6"
+                gutterBottom
+                sx={bookingStyles.reviewTitle}
+              >
+                Đánh giá và xếp hạng từ khách hàng
+              </Typography>
+
+              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                <Rating
+                  name="client-rating"
+                  defaultValue={4.5}
+                  precision={0.5}
+                  icon={
+                    <LocalHotelIcon
+                      fontSize="inherit"
+                      sx={{ color: "primary.main" }}
+                    />
+                  }
+                  emptyIcon={
+                    <LocalHotelIcon
+                      fontSize="inherit"
+                      sx={{ color: "action.disabled" }}
+                    />
+                  }
+                />
+                <Typography
+                  variant="body2"
+                  sx={{ ml: 1, color: "text.secondary" }}
+                >
+                  (4.5/5 từ 128 đánh giá)
+                </Typography>
+              </Box>
+
+              <TextField
+                label="Viết đánh giá của bạn..."
+                multiline
+                rows={4}
+                variant="outlined"
+                fullWidth
+                sx={bookingStyles.reviewTextField}
+              />
+
+              <Button
+                variant="contained"
+                endIcon={<SendIcon />}
+                sx={bookingStyles.submitReviewButton}
+              >
+                Gửi đánh giá
+              </Button>
+            </Box>
+          </Box>
+
+          <style jsx global>
+            {globalStyles}
+          </style>
+        </Grid>
+      </Grid>
+
+      <Rooms />
+    </Container>
+  );
+};
+
+// Component Loading Fallback
+const BookingLoadingFallback = () => (
+  <Container maxWidth="xl">
+    <Box
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
+      minHeight="50vh"
+    >
+      <Box textAlign="center">
+        <CircularProgress color="primary" size={50} />
+        <Typography variant="body1" sx={{ mt: 2, color: "text. secondary" }}>
+          Đang tải thông tin phòng...
+        </Typography>
+      </Box>
+    </Box>
+  </Container>
+);
+
+// Component chính - wrap trong Suspense
+const BookingComponent = ({ content, loading, setLoading }) => {
+  return (
+    <Suspense fallback={<BookingLoadingFallback />}>
+      <BookingComponentContent
+        content={content}
+        loading={loading}
+        setLoading={setLoading}
+      />
     </Suspense>
   );
 };

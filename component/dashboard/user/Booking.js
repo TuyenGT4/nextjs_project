@@ -137,7 +137,7 @@ export default function BookingsPage() {
                   <TableCell>{booking.number_of_rooms}</TableCell>
                   <TableCell>
                     <strong style={{ color: "#16a34a" }}>
-                      ${booking.total_price.toLocaleString("vi-VN")}
+                      {booking.total_price.toLocaleString("vi-VN")} VND
                     </strong>
                   </TableCell>
                   <TableCell>

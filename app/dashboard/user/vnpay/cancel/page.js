@@ -1,12 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Box, Typography, Button } from "@mui/material";
+import { Box, Typography, Button, CircularProgress } from "@mui/material";
 import { FaTimesCircle } from "react-icons/fa";
 import { motion } from "framer-motion";
 
-const VNPayCancel = () => {
+// Tách phần sử dụng useSearchParams ra component riêng
+const VNPayCancelContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
@@ -68,6 +69,28 @@ const VNPayCancel = () => {
         </Button>
       </Box>
     </Box>
+  );
+};
+
+// Component loading
+const LoadingFallback = () => (
+  <Box
+    display="flex"
+    justifyContent="center"
+    alignItems="center"
+    height="100vh"
+    bgcolor="#212121"
+  >
+    <CircularProgress color="error" />
+  </Box>
+);
+
+// Component chính - wrap trong Suspense
+const VNPayCancel = () => {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <VNPayCancelContent />
+    </Suspense>
   );
 };
 

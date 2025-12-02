@@ -27,15 +27,14 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     let vnp_Params = {};
 
-    // Lấy tất cả params từ URL
     for (const [key, value] of searchParams.entries()) {
       vnp_Params[key] = value;
     }
 
     const secureHash = vnp_Params["vnp_SecureHash"];
-    const secretKey = process.env.VNPAY_HASH_SECRET;
+    // ✅ SỬA: Dùng đúng tên biến trong config.js
+    const secretKey = process.env.VNP_SECRET;
 
-    // Xóa các trường hash để verify
     delete vnp_Params["vnp_SecureHash"];
     delete vnp_Params["vnp_SecureHashType"];
 
@@ -45,15 +44,16 @@ export async function GET(req) {
     const hmac = crypto.createHmac("sha512", secretKey);
     const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
 
-    // Lấy thông tin từ response
     const vnp_ResponseCode = vnp_Params["vnp_ResponseCode"];
     const vnp_TxnRef = vnp_Params["vnp_TxnRef"];
     const vnp_TransactionNo = vnp_Params["vnp_TransactionNo"];
 
-    // Tìm booking theo vnpay_order_id
     const booking = await Booking.findOne({ vnpay_order_id: vnp_TxnRef });
 
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const baseUrl =
+      process.env.NEXTAUTH_URL ||
+      process.env.API?.replace("/api", "") ||
+      "http://localhost:3000";
 
     if (!booking) {
       console.log("Booking not found for order:", vnp_TxnRef);
@@ -65,10 +65,8 @@ export async function GET(req) {
       );
     }
 
-    // Verify chữ ký
     if (secureHash === signed) {
       if (vnp_ResponseCode === "00") {
-        // Thanh toán thành công
         booking.payment_status = "1";
         booking.transaction_id = vnp_TransactionNo;
         booking.status = "active";
@@ -81,28 +79,24 @@ export async function GET(req) {
 
         return NextResponse.redirect(
           new URL(
-            `/dashboard/user/vnpay/success?bookingId=${booking._id}`,
+            "/dashboard/user/vnpay/success? bookingId=" + booking._id,
             baseUrl
           )
         );
       } else {
-        // Thanh toán thất bại
         console.log("Payment failed with code:", vnp_ResponseCode);
         return NextResponse.redirect(
           new URL(
-            `/dashboard/user/vnpay/cancel?error=payment_failed&code=${vnp_ResponseCode}`,
+            "/dashboard/user/vnpay/cancel?error=payment_failed&code=" +
+              vnp_ResponseCode,
             baseUrl
           )
         );
       }
     } else {
-      // Chữ ký không hợp lệ
       console.log("Invalid signature");
       return NextResponse.redirect(
-        new URL(
-          "/dashboard/user/vnpay/cancel? error=invalid_signature",
-          baseUrl
-        )
+        new URL("/dashboard/user/vnpay/cancel?error=invalid_signature", baseUrl)
       );
     }
   } catch (error) {
