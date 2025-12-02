@@ -24,6 +24,7 @@ const userSchema = new mongoose.Schema(
     mobileNumber: {
       type: String,
       unique: true,
+      sparse: true,
     },
     phoneVerified: {
       type: Boolean,
@@ -44,12 +45,10 @@ const userSchema = new mongoose.Schema(
 
     address: {
       type: String,
-      unique: true,
     },
 
     country: {
       type: String,
-      unique: true,
     },
   },
   { timestamps: true }
