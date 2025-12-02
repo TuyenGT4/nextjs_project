@@ -16,7 +16,6 @@ import {
 import HotelHubLogo from "@/component/nav/HotelHubLogo";
 import GoogleIcon from "@mui/icons-material/Google";
 
-
 import { signIn } from "next-auth/react";
 const RegisterPage = () => {
   const [name, setName] = useState("");
@@ -33,7 +32,7 @@ const RegisterPage = () => {
     e.preventDefault();
 
     if (!name || !phone || !email || !password) {
-      setSnackbarMessage("All fields are  required");
+      setSnackbarMessage("Tất cả các trường đều bắt buộc");
       setSnackbarSeverity("error");
       setOpenSnackbar(true);
 
@@ -41,7 +40,7 @@ const RegisterPage = () => {
     }
 
     if (!/^\d{10}$/.test(phone)) {
-      setSnackbarMessage("Please   enter a valid 10  digit phone number");
+      setSnackbarMessage("Vui lòng nhập số điện thoại 10 chữ số hợp lệ");
       setSnackbarSeverity("error");
 
       setOpenSnackbar(true);
@@ -49,7 +48,7 @@ const RegisterPage = () => {
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setSnackbarMessage("Please  enter a valid email  adrress");
+      setSnackbarMessage("Vui lòng nhập địa chỉ email hợp lệ");
       setSnackbarSeverity("error");
 
       setOpenSnackbar(true);
@@ -66,7 +65,7 @@ const RegisterPage = () => {
       });
 
       if (response.ok) {
-        setSnackbarMessage(     "Registration successful");
+        setSnackbarMessage("Đăng ký thành công");
 
         setSnackbarSeverity("success");
 
@@ -78,11 +77,11 @@ const RegisterPage = () => {
         setPassword("");
       } else {
         const data = await response.json();
-        setSnackbarMessage(data.message || "register failed");
+        setSnackbarMessage(data.message || "Đăng ký thất bại");
         setSnackbarSeverity("error");
       }
     } catch (error) {
-      setSnackbarMessage("an error occurresd please try  again");
+      setSnackbarMessage("Đã xảy ra lỗi, vui lòng thử lại");
       setSnackbarSeverity("error");
     }
 
@@ -140,11 +139,11 @@ const RegisterPage = () => {
           </Box>
 
           <Typography variant="h4" gutterBottom align="center">
-            Register
+            Đăng ký
           </Typography>
 
           <TextField
-            label="Name"
+            label="Họ và tên"
             variant="outlined"
             fullWidth
             value={name}
@@ -161,7 +160,7 @@ const RegisterPage = () => {
           />
 
           <TextField
-            label="Phone"
+            label="Số điện thoại"
             variant="outlined"
             fullWidth
             value={phone}
@@ -196,7 +195,7 @@ const RegisterPage = () => {
           />
 
           <TextField
-            label="Password"
+            label="Mật khẩu"
             type="password"
             variant="outlined"
             fullWidth
@@ -213,7 +212,19 @@ const RegisterPage = () => {
             }}
           />
 
-          <Divider>or</Divider>
+          <Button
+            type="submit"
+            variant="contained"
+            fullWidth
+            sx={{
+              backgroundColor: "red",
+              "&:hover": { backgroundColor: "darkred" },
+              py: 1.5,
+            }}
+          >
+            Đăng ký
+          </Button>
+          <Divider>Hoặc</Divider>
 
           <Button
             fullWidth
@@ -227,25 +238,12 @@ const RegisterPage = () => {
             }}
             onClick={() => signIn("google")}
           >
-            Log In with Google
-          </Button>
-
-          <Button
-            type="submit"
-            variant="contained"
-            fullWidth
-            sx={{
-              backgroundColor: "red",
-              "&:hover": { backgroundColor: "darkred" },
-              py: 1.5,
-            }}
-          >
-            Register
+            Đăng nhập với Google
           </Button>
 
           <Typography align="center" sx={{ mt: 2 }}>
             <Link href="/login" underline="hover">
-              Already have an account? Login
+              Bạn đã có tài khoản? Đăng nhập ngay
             </Link>
           </Typography>
         </Box>

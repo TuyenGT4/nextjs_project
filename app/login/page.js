@@ -15,7 +15,7 @@ import {
 } from "@mui/material";
 import { signIn } from "next-auth/react";
 import HotelHubLogo from "@/component/nav/HotelHubLogo";
-import {  useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import GoogleIcon from "@mui/icons-material/Google";
 
 const LoginPage = () => {
@@ -47,7 +47,7 @@ const LoginPage = () => {
     const isInputPhone = validatedPhone(loginId);
 
     if (!loginId || !password) {
-      setSnackbarMessage("Login Id and Password are required");
+      setSnackbarMessage("Vui lòng nhập thông tin đăng nhập và mật khẩu");
 
       setSnackbarSeverity("error");
 
@@ -56,7 +56,7 @@ const LoginPage = () => {
     }
 
     if (!isInputEmail && !isInputPhone) {
-      setSnackbarMessage("Please enter a valid email or phone number");
+      setSnackbarMessage("Vui lòng nhập email hoặc số điện thoại hợp lệ");
       setSnackbarSeverity("error");
 
       setOpenSnackbar(true);
@@ -71,16 +71,16 @@ const LoginPage = () => {
       });
 
       if (result?.error) {
-        setSnackbarMessage(result.error || " login  failed");
+        setSnackbarMessage(result.error || "Đăng nhập thất bại");
         setSnackbarSeverity("error");
       } else {
-        setSnackbarMessage("Login successfull");
+        setSnackbarMessage("Đăng nhập thành công");
         setSnackbarSeverity("success");
 
         router.push("/");
       }
     } catch (error) {
-      setSnackbarMessage("An error occurred Please try  again");
+      setSnackbarMessage("Đã xảy ra lỗi, vui lòng thử lại");
     }
 
     setOpenSnackbar(true);
@@ -125,7 +125,7 @@ const LoginPage = () => {
             </Typography>
 
             <Typography variant="h4" gutterBottom>
-              Login
+              Đăng nhập
             </Typography>
             <TextField
               label={isEmail ? "Email" : "Phone Number"}
@@ -160,7 +160,7 @@ const LoginPage = () => {
               }}
             />
             <TextField
-              label="Password"
+              label="Mật khẩu"
               type="password"
               variant="outlined"
               fullWidth
@@ -192,7 +192,28 @@ const LoginPage = () => {
               }}
             />
 
-            <Divider sx={{ mt: 2 }}>or</Divider>
+            <Link
+              href="/forgot-password"
+              variant="body2"
+              sx={{ alignSelf: "flex-end", mt: 1 }}
+            >
+              Quên mật khẩu?
+            </Link>
+            <Button
+              type="submit"
+              variant="contained"
+              sx={{
+                backgroundColor: "red",
+                "&:hover": {
+                  backgroundColor: "red",
+                },
+                mt: 2,
+                width: "100%",
+              }}
+            >
+              Đăng nhập
+            </Button>
+            <Divider sx={{ mt: 2 }}>hoặc</Divider>
 
             <Button
               fullWidth
@@ -210,32 +231,11 @@ const LoginPage = () => {
               }}
               onClick={() => signIn("google")}
             >
-              Log In with Google
+              Đăng nhập với Google
             </Button>
 
-            <Link
-              href="/forgot-password"
-              variant="body2"
-              sx={{ alignSelf: "flex-end", mt: 1 }}
-            >
-              Forgot Password?
-            </Link>
-            <Button
-              type="submit"
-              variant="contained"
-              sx={{
-                backgroundColor: "red",
-                "&:hover": {
-                  backgroundColor: "red",
-                },
-                mt: 2,
-                width: "100%",
-              }}
-            >
-              Login
-            </Button>
             <Link href="/register" variant="body2" sx={{ mt: 2 }}>
-              Don't have an account? Sign Up
+              Bạn chưa có tài khoản? Đăng ký ngay
             </Link>
           </Box>
         </Grid>
