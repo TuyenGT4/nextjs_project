@@ -61,6 +61,12 @@ const bookingSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+
+    vnpay_order_id: {
+      type: String,
+      default: null,
+    },
+
     transaction_id: {
       type: String,
       default: null,

@@ -14,13 +14,13 @@ import {
   Avatar,
 } from "@mui/material";
 import LocalAtmIcon from "@mui/icons-material/LocalAtm";
-import CreditCardIcon from "@mui/icons-material/CreditCard";
-import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
-import AccountBalanceIcon from "@mui/icons-material/AccountBalance"; // Alternative for PayPal
+import QrCode2Icon from "@mui/icons-material/QrCode2";
+
 const PaymentGateways = ({
   selectedPaymentMethod,
   setSelectedPaymentMethod,
   handlePlaceOrder,
+  loading,
 }) => {
   const paymentMethods = [
     {
@@ -30,22 +30,10 @@ const PaymentGateways = ({
       color: iconColors.cod,
     },
     {
-      value: "stripe",
-      label: "Thẻ tín dụng/Ghi nợ",
-      icon: <CreditCardIcon />,
-      color: iconColors.stripe,
-    },
-    {
-      value: "razorpay",
-      label: "Ví Razorpay",
-      icon: <AccountBalanceWalletIcon />,
-      color: iconColors.razorpay,
-    },
-    {
-      value: "paypal",
-      label: "PayPal",
-      icon: <AccountBalanceIcon />,
-      color: iconColors.paypal,
+      value: "vnpay",
+      label: "VNPay - Quét mã QR",
+      icon: <QrCode2Icon />,
+      color: "linear-gradient(135deg, #0066cc 0%, #004499 100%)",
     },
   ];
 
@@ -103,32 +91,39 @@ const PaymentGateways = ({
           onClick={handlePlaceOrder}
           fullWidth
           size="large"
+          disabled={loading}
           endIcon={
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M5 12H19"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M12 5L19 12L12 19"
-                stroke="white"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            !loading && (
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M5 12H19"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M12 5L19 12L12 19"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            )
           }
         >
-          Xác Nhận & Thanh Toán
+          {loading
+            ? "Đang xử lý..."
+            : selectedPaymentMethod === "vnpay"
+            ? "Thanh toán qua VNPay"
+            : "Xác Nhận & Thanh Toán"}
         </Button>
       </CardContent>
     </Card>

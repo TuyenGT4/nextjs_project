@@ -3,7 +3,7 @@ import { Container, Grid, Box, CircularProgress } from "@mui/material";
 import { useSession } from "next-auth/react";
 import BillingDetails from "./BillingDetails";
 import BookingSummary from "./BookingSummary";
-import PaymentGateways from "./PaymentGateways"; // Import the separated component
+import PaymentGateways from "./PaymentGateways";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 
@@ -26,7 +26,6 @@ export default function Home() {
         checkIn: params.get("checkIn"),
         checkOut: params.get("checkOut"),
         guests: parseInt(params.get("guests")),
-
         rooms: parseInt(params.get("rooms")),
       };
 
@@ -41,7 +40,6 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-
         body: JSON.stringify({
           roomId: bookingData.roomId,
           checkIn: bookingData.checkIn,
@@ -73,121 +71,20 @@ export default function Home() {
         image: result.image,
       });
     } catch (error) {
-      console.log(" error", error);
+      console.log("error", error);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    const script = document.createElement("script");
-
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-
-    script.async = true;
-
-    const loadHandler = () => {
-      console.log("Razorpay script loaded");
-    };
-
-    script.addEventListener("load", loadHandler);
-    document.body.appendChild(script);
-
-    return () => {
-      script.removeEventListener("load", loadHandler);
-
-      document.body.removeChild(script);
-    };
-  }, []);
-
-  const handleRazorpay = async (orderData) => {
+  // Xử lý thanh toán VNPay
+  const handleVNPay = async (orderData) => {
     try {
       setLoading(true);
       const response = await fetch(
-        `${process.env.API}/user/payment/razorpaypayment/razorpay`,
+        `${process.env.API}/user/payment/vnpaypayment/vnpay`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(orderData),
-        }
-      );
-
-      const data = await response.json();
-      const options = {
-        key: process.env.RAZORPAY_KEY_ID,
-        amount: data && data?.amount * 100,
-        currency: "INR",
-        name: "Hotel hub",
-        description: "test payment",
-        order_id: data && data.id,
-
-        handler: function (response) {
-          alert(response);
-          verifyPayment(response.razorpay_payment_id);
-          setLoading(false);
-        },
-
-        prefill: {
-          name: data && data.name,
-          email: data && data.email,
-        },
-
-        notes: {
-          address: "Địa chỉ của bạn",
-        },
-        theme: {
-          color: "red",
-        },
-      };
-
-      const rzp1 = new window.Razorpay(options);
-      rzp1.open();
-      setLoading(false);
-    } catch (error) {
-      console.log("error inintiating payment", error);
-      setLoading(false);
-    }
-  };
-
-  const verifyPayment = async (paymentId) => {
-    try {
-      const response = await fetch(
-        `${process.env.API}/user/payment/razorpaypayment/razorpayverify`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ razorpay_payment_id: paymentId }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (data?.err) {
-        router.push("/cancel");
-        setLoading(false);
-      } else {
-        toast.success(data?.success);
-        router.push("/dashboard/user");
-
-        setLoading(false);
-      }
-    } catch (error) {
-      console.log("error", error);
-      setLoading(false);
-    }
-  };
-
-  const handleStripe = async (orderData) => {
-    try {
-      const response = await fetch(
-        `${process.env.API}/user/payment/stripepayment/stripe`,
-        {
-          method: "POST",
-
           headers: {
             "Content-Type": "application/json",
           },
@@ -198,36 +95,42 @@ export default function Home() {
       const data = await response.json();
 
       if (!response.ok) {
-        toast.error(data.err);
+        toast.error(data.err || "Không thể tạo thanh toán VNPay");
+        setLoading(false);
       } else {
-        window.location.href = data.id;
+        window.location.href = data.paymentUrl;
       }
     } catch (error) {
-      console.log("error", error);
+      console.log("VNPay payment error:", error);
+      toast.error("Lỗi khi khởi tạo thanh toán VNPay");
+      setLoading(false);
     }
   };
 
-  const handlePaypal = async (orderData) => {
+  // Xử lý thanh toán COD
+  const handleCOD = async (orderData) => {
     try {
-      const response = await fetch(
-        `${process.env.API}/user/payment/paypalpayment/paypal`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(orderData),
-        }
-      );
+      setLoading(true);
+      const response = await fetch(`${process.env.API}/user/place-order`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderData),
+      });
 
-      const data = await response.json();
       if (!response.ok) {
-        toast.error("Thanh toán PayPal thất bại");
-      } else {
-        router.push(data.id);
+        const errordata = await response.json();
+        throw new Error(errordata.message);
       }
+
+      const result = await response.json();
+      toast.success("Đặt phòng thành công!");
+      router.push("/dashboard/user");
     } catch (error) {
-      console.log(err);
+      toast.error(`Đặt phòng thất bại: ${error.message}`);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -238,15 +141,15 @@ export default function Home() {
       );
 
       if (errorField) {
-        alert(`Vui lòng điền đúng thông tin ${errorField[0]}  `);
+        toast.error(`Vui lòng điền đúng thông tin ${errorField[0]}`);
       } else {
-        alert("Vui lòng điền đầy đủ thông tin bắt buộc");
+        toast.error("Vui lòng điền đầy đủ thông tin bắt buộc");
       }
       return;
     }
 
     if (!selectedPaymentMethod) {
-      alert("Vui lòng chọn phương thức thanh toán");
+      toast.error("Vui lòng chọn phương thức thanh toán");
       return;
     }
 
@@ -257,37 +160,17 @@ export default function Home() {
     };
 
     try {
-      switch (selectedPaymentMethod.toLocaleLowerCase()) {
-        case "stripe":
-          await handleStripe(orderData);
+      switch (selectedPaymentMethod.toLowerCase()) {
+        case "vnpay":
+          await handleVNPay(orderData);
           break;
-        case "razorpay":
-          await handleRazorpay(orderData);
-          break;
-
-        case "paypal":
-          await handlePaypal(orderData);
-          break;
-
+        case "cod":
         default:
-          const response = await fetch(`${process.env.API}/user/place-order`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(orderData),
-          });
-
-          if (!response.ok) {
-            const errordata = await response.json();
-            throw new Error(errordata.message);
-          }
-
-          const result = await response.json();
-          alert(`Đặt phòng thành công`);
+          await handleCOD(orderData);
+          break;
       }
     } catch (error) {
-      alert(`Đặt phòng thất bại ${error.message}`);
+      toast.error(`Đặt phòng thất bại: ${error.message}`);
     }
   };
 
@@ -340,11 +223,10 @@ export default function Home() {
             selectedPaymentMethod={selectedPaymentMethod}
             setSelectedPaymentMethod={setSelectedPaymentMethod}
             handlePlaceOrder={handlePlaceOrder}
+            loading={loading}
           />
         </Grid>
       </Grid>
     </Container>
   );
 }
-
-//sb-drhne26200129@personal.example.com
